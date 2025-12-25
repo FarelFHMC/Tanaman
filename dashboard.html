@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Game Tanaman</title>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Font Awesome untuk icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1B5E20, #2E7D32);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info h1 {
+            color: #2E7D32;
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+
+        .user-info .email {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 30px;
+        }
+
+        .stat-box {
+            background: #E8F5E9;
+            padding: 15px 25px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .stat-box .label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .stat-box .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2E7D32;
+        }
+
+        .stat-box .value.coin {
+            color: #FF9800;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* ===== KEBUN SECTION ===== */
+        .kebun-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            color: #2E7D32;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #E8F5E9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kebun-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .slot {
+            aspect-ratio: 1;
+            border: 3px dashed #BDBDBD;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #F5F5F5;
+            padding: 10px;
+        }
+
+        .slot:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        }
+
+        .slot.kosong {
+            border-color: #4CAF50;
+            background: #E8F5E9;
+        }
+
+        .slot.terkunci {
+            background: #EEEEEE;
+            color: #9E9E9E;
+            cursor: not-allowed;
+        }
+
+        .slot.terkunci:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .slot .icon {
+            font-size: 30px;
+            margin-bottom: 5px;
+        }
+
+        .slot .nama {
+            font-size: 12px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .slot .timer {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .slot .status {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 5px;
+        }
+
+        .status.tumbuh {
+            background: #FFF3E0;
+            color: #EF6C00;
+        }
+
+        .status.matang {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .kebun-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #1976D2;
+        }
+
+        .btn-danger {
+            background: #F44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #D32F2F;
+        }
+
+        /* ===== SHOP SECTION ===== */
+        .shop-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .shop-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .tanaman-item {
+            border: 2px solid #E0E0E0;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s;
+        }
+
+        .tanaman-item:hover {
+            border-color: #4CAF50;
+            background: #F9F9F9;
+        }
+
+        .tanaman-icon {
+            width: 50px;
+            height: 50px;
+            background: #E8F5E9;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #2E7D32;
+        }
+
+        .tanaman-info {
+            flex: 1;
+        }
+
+        .tanaman-info h4 {
+            color: #2E7D32;
+            margin-bottom: 5px;
+        }
+
+        .tanaman-info p {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .tanaman-harga {
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .tanaman-harga.jual {
+            color: #4CAF50;
+        }
+
+        .beli-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: background 0.3s;
+        }
+
+        .beli-btn:hover {
+            background: #45a049;
+        }
+
+        .beli-btn:disabled {
+            background: #CCCCCC;
+            cursor: not-allowed;
+        }
+
+        /* ===== INVENTORY & FITUR LAIN ===== */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .inventory-section, .redeem-section, .admin-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .inventory-item {
+            background: #F5F5F5;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+            border: 1px solid #E0E0E0;
+        }
+
+        .redeem-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .redeem-form input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .redeem-form input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .redeem-btn {
+            background: #FF9800;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* ===== MODAL ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: #2E7D32;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        /* ===== LOADING & MESSAGES ===== */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .error {
+            background: #FFEBEE;
+            color: #D32F2F;
+            border-left: 4px solid #F44336;
+        }
+
+        .success {
+            background: #E8F5E9;
+            color: #2E7D32;
+            border-left: 4px solid #4CAF50;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 992px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+            
+            .stat-box {
+                min-width: 120px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .kebun-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .inventory-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .kebun-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .tanaman-item {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .kebun-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="user-info">
+                <h1>🌱 Kebun Virtual</h1>
+                <div class="email" id="userEmail">Loading...</div>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="label">Uang</div>
+                    <div class="value coin" id="uang">$0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Slot Kebun</div>
+                    <div class="value" id="slotInfo">0/25</div>
+                </div>
+                <button class="btn btn-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- KEBUN -->
+            <div class="kebun-section">
+                <div class="section-title">
+                    <h2><i class="fas fa-seedling"></i> Kebun Saya</h2>
+                    <div id="kebunInfo">Slot: 0/5</div>
+                </div>
+                
+                <div class="kebun-grid" id="kebunGrid">
+                    <!-- Slot kebun akan diisi oleh JavaScript -->
+                </div>
+                
+                <div class="kebun-actions">
+                    <button class="btn btn-primary" onclick="openModal('tanamModal')">
+                        <i class="fas fa-plus"></i> Tanam Tanaman
+                    </button>
+                    <button class="btn btn-secondary" onclick="panenSemua()">
+                        <i class="fas fa-money-bill-wave"></i> Panen Semua
+                    </button>
+                </div>
+            </div>
+
+            <!-- SIDEBAR -->
+            <div class="sidebar">
+                <!-- INVENTORY -->
+                <div class="inventory-section">
+                    <div class="section-title">
+                        <h2><i class="fas fa-shopping-bag"></i> Inventory</h2>
+                        <div id="inventoryCount">0/10</div>
+                    </div>
+                    <div class="inventory-grid" id="inventoryGrid">
+                        <!-- Inventory items akan diisi -->
+                    </div>
+                </div>
+
+                <!-- REDEEM CODE -->
+                <div class="redeem-section">
+                    <div class="section-title">
+                        <h2><i class="fas fa-gift"></i> Redeem Code</h2>
+                    </div>
+                    <div class="redeem-form">
+                        <input type="text" id="redeemCode" placeholder="Masukkan kode" maxlength="20">
+                        <button class="redeem-btn" onclick="redeemCode()">Redeem</button>
+                    </div>
+                    <div id="redeemMessage" class="message"></div>
+                </div>
+
+                <!-- ADMIN PANEL (hanya untuk admin) -->
+                <div class="admin-section" id="adminSection" style="display: none;">
+                    <div class="section-title">
+                        <h2><i class="fas fa-crown"></i> Admin Panel</h2>
+                    </div>
+                    <button class="btn btn-secondary" onclick="window.location.href='admin.html'">
+                        <i class="fas fa-users-cog"></i> Kelola User
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SHOP -->
+        <div class="shop-section">
+            <div class="section-title">
+                <h2><i class="fas fa-store"></i> Toko Tanaman</h2>
+                <div>Beli tanaman untuk ditanam</div>
+            </div>
+            <div class="shop-grid" id="shopGrid">
+                <!-- Tanaman toko akan diisi -->
+            </div>
+        </div>
+
+        <!-- MESSAGES -->
+        <div id="errorMessage" class="message error"></div>
+        <div id="successMessage" class="message success"></div>
+    </div>
+
+    <!-- MODAL TANAM -->
+    <div class="modal" id="tanamModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-seedling"></i> Tanam Tanaman</h3>
+                <button class="close-modal" onclick="closeModal('tanamModal')">&times;</button>
+            </div>
+            <div id="tanamModalContent">
+                <!-- Konten akan diisi oleh JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL BUKA SLOT -->
+    <div class="modal" id="bukaSlotModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-lock-open"></i> Buka Slot Kebun</h3>
+                <button class="close-modal" onclick="closeModal('bukaSlotModal')">&times;</button>
+            </div>
+            <p>Buka slot kebun baru untuk menanam lebih banyak tanaman.</p>
+            <p><strong>Harga: $500 per slot</strong></p>
+            <div class="kebun-actions" style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="bukaSlot()">Buka Slot Baru</button>
+                <button class="btn btn-secondary" onclick="closeModal('bukaSlotModal')">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== KONFIGURASI FIREBASE =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyDKP_MntjNaWYDQfbwOCqQoK1Vyvf6JhMM",
+            authDomain: "contoh-c7b96.firebaseapp.com",
+            projectId: "contoh-c7b96",
+            storageBucket: "contoh-c7b96.firebasestorage.app",
+            messagingSenderId: "606885088808",
+            appId: "1:606885088808:web:35b4dac1fcf13810576f1d",
+            measurementId: "G-T05S4XV2ZK"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        // ===== DATA GAME =====
+        const tanamanList = {
+            "Selada": {
+                hargaBeli: 100,
+                hargaJual: 150,
+                waktuTumbuh: 15, // detik
+                icon: "🥬"
+            },
+            "Tomat": {
+                hargaBeli: 250,
+                hargaJual: 400,
+                waktuTumbuh: 30,
+                icon: "🍅"
+            },
+            "Cabai": {
+                hargaBeli: 500,
+                hargaJual: 800,
+                waktuTumbuh: 45,
+                icon: "🌶️"
+            },
+            "Emas Leaf": {
+                hargaBeli: 1000,
+                hargaJual: 1800,
+                waktuTumbuh: 60,
+                icon: "🍂"
+            }
+        };
+        
+        const kodeHadiah = {
+            "BONUS500": { type: "uang", value: 500 },
+            "BONUS1000": { type: "uang", value: 1000 },
+            "OPEN1SLOT": { type: "slot", value: 1 },
+            "adminfarel": { type: "admin", value: true }
+        };
+        
+        // ===== VARIABEL GLOBAL =====
+        let userData = null;
+        let userDocRef = null;
+        let unsubscribeUser = null;
+        
+        // ===== FUNGSI UTAMA =====
+        function init() {
+            auth.onAuthStateChanged(async (user) => {
+                if (!user) {
+                    window.location.href = "login.html";
+                } else {
+                    document.getElementById("userEmail").textContent = user.email;
+                    
+                    // Setup real-time listener untuk user data
+                    userDocRef = db.collection("users").doc(user.uid);
+                    unsubscribeUser = userDocRef.onSnapshot(async (doc) => {
+                        if (doc.exists) {
+                            userData = doc.data();
+                            
+                            // Cek banned
+                            if (userData.banned) {
+                                alert("Akun Anda dibanned!");
+                                await auth.signOut();
+                                window.location.href = "login.html";
+                                return;
+                            }
+                            
+                            // Update UI
+                            updateUI();
+                            
+                            // Tampilkan admin panel jika admin
+                            if (userData.role === "admin") {
+                                document.getElementById("adminSection").style.display = "block";
+                            }
+                        } else {
+                            // Buat data user jika belum ada (fallback)
+                            const defaultData = {
+                                email: user.email,
+                                uid: user.uid,
+                                uang: 1000,
+                                role: "user",
+                                banned: false,
+                                slotTerbuka: 5,
+                                inventory: [],
+                                kebun: [],
+                                usedCodes: []
+                            };
+                            await userDocRef.set(defaultData);
+                            userData = defaultData;
+                            updateUI();
+                        }
+                    }, (error) => {
+                        console.error("Error listening to user data:", error);
+                        showError("Gagal memuat data user");
+                    });
+                    
+                    // Render shop
+                    renderShop();
+                }
+            });
+        }
+        
+        function updateUI() {
+            if (!userData) return;
+            
+            // Update uang
+            document.getElementById("uang").textContent = `$${userData.uang}`;
+            
+            // Update slot info
+            const slotTerisi = userData.kebun ? userData.kebun.length : 0;
+            document.getElementById("slotInfo").textContent = `${slotTerisi}/${userData.slotTerbuka}`;
+            document.getElementById("kebunInfo").textContent = `Slot: ${slotTerisi}/${userData.slotTerbuka}`;
+            
+            // Update inventory
+            updateInventory();
+            
+            // Update kebun
+            updateKebun();
+        }
+        
+        function updateInventory() {
+            const inventoryGrid = document.getElementById("inventoryGrid");
+            const inventoryCount = document.getElementById("inventoryCount");
+            
+            if (!userData.inventory || userData.inventory.length === 0) {
+                inventoryGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #999;">Inventory kosong</div>';
+                inventoryCount.textContent = "0/10";
+                return;
+            }
+            
+            // Hitung jumlah per tanaman
+            const tanamanCount = {};
+            userData.inventory.forEach(nama => {
+                tanamanCount[nama] = (tanamanCount[nama] || 0) + 1;
+            });
+            
+            // Render inventory
+            let html = "";
+            for (const [nama, jumlah] of Object.entries(tanamanCount)) {
+                const tanaman = tanamanList[nama];
+                if (tanaman) {
+                    html += `
+                        <div class="inventory-item">
+                            <div style="font-size: 20px;">${tanaman.icon}</div>
+                            <div style="font-weight: bold; margin: 5px 0;">${nama}</div>
+                            <div style="background: #4CAF50; color: white; border-radius: 10px; padding: 2px 5px; font-size: 11px;">${jumlah}x</div>
+                        </div>
+                    `;
+                }
+            }
+            
+            inventoryGrid.innerHTML = html;
+            inventoryCount.textContent = `${userData.inventory.length}/10`;
+        }
+        
+        function updateKebun() {
+            const kebunGrid = document.getElementById("kebunGrid");
+            let html = "";
+            
+            // Slot yang tersedia
+            const totalSlots = 25;
+            const slotTerbuka = userData.slotTerbuka || 5;
+            
+            for (let i = 0; i < totalSlots; i++) {
+                const slot = userData.kebun ? userData.kebun.find(s => s.slotKe === i + 1) : null;
+                
+                if (i < slotTerbuka) {
+                    // Slot terbuka
+                    if (slot) {
+                        // Ada tanaman di slot ini
+                        const tanaman = tanamanList[slot.namaTanaman];
+                        const sekarang = new Date().getTime();
+                        const waktuTanam = slot.waktuTanam?.toDate().getTime() || sekarang;
+                        const waktuMatang = waktuTanam + (tanaman.waktuTumbuh * 1000);
+                        const sisaWaktu = Math.max(0, waktuMatang - sekarang);
+                        const sudahMatang = sisaWaktu === 0;
+                        
+                        html += `
+                            <div class="slot kosong" onclick="kelolaTanaman(${i + 1})">
+                                <div class="icon">${tanaman.icon}</div>
+                                <div class="nama">${slot.namaTanaman}</div>
+                                ${sudahMatang ? 
+                                    '<div class="status matang">Siap Panen!</div>' :
+                                    `<div class="status tumbuh">${formatWaktu(sisaWaktu)}</div>`
+                                }
+                            </div>
+                        `;
+                    } else {
+                        // Slot kosong
+                        html += `
+                            <div class="slot kosong" onclick="openModal('tanamModal')">
+                                <div class="icon"><i class="fas fa-plus"></i></div>
+                                <div class="nama">Slot Kosong</div>
+                                <div class="timer">Klik untuk tanam</div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    // Slot terkunci
+                    html += `
+                        <div class="slot terkunci" onclick="openModal('bukaSlotModal')">
+                            <div class="icon"><i class="fas fa-lock"></i></div>
+                            <div class="nama">Slot Terkunci</div>
+                            <div class="timer">Buka: $500</div>
+                        </div>
+                    `;
+                }
+            }
+            
+            kebunGrid.innerHTML = html;
+        }
+        
+        function renderShop() {
+            const shopGrid = document.getElementById("shopGrid");
+            let html = "";
+            
+            for (const [nama, data] of Object.entries(tanamanList)) {
+                const bisaBeli = userData && userData.uang >= data.hargaBeli && 
+                                userData.inventory.length < 10;
+                
+                html += `
+                    <div class="tanaman-item">
+                        <div class="tanaman-icon">${data.icon}</div>
+                        <div class="tanaman-info">
+                            <h4>${nama}</h4>
+                            <p><span class="tanaman-harga">Beli: $${data.hargaBeli}</span> | 
+                               <span class="tanaman-harga jual">Jual: $${data.hargaJual}</span></p>
+                            <p>Waktu tumbuh: ${data.waktuTumbuh} detik</p>
+                        </div>
+                        <button class="beli-btn" onclick="beliTanaman('${nama}')" 
+                                ${!bisaBeli ? 'disabled' : ''}>
+                            ${!bisaBeli ? 'Tidak Bisa Beli' : 'Beli'}
+                        </button>
+                    </div>
+                `;
+            }
+            
+            shopGrid.innerHTML = html;
+        }
+        
+        // ===== FUNGSI GAME =====
+        async function beliTanaman(nama) {
+            if (!userData) return;
+            
+            const tanaman = tanamanList[nama];
+            if (!tanaman) return;
+            
+            // Validasi
+            if (userData.uang < tanaman.hargaBeli) {
+                showError("Uang tidak cukup!");
+                return;
+            }
+            
+            if (userData.inventory.length >= 10) {
+                showError("Inventory penuh! Maksimal 10 tanaman.");
+                return;
+            }
+            
+            try {
+                // Update data user
+                const newUang = userData.uang - tanaman.hargaBeli;
+                const newInventory = [...userData.inventory, nama];
+                
+                await userDocRef.update({
+                    uang: newUang,
+                    inventory: newInventory
+                });
+                
+                showSuccess(`Berhasil membeli ${nama}!`);
+                
+                // Update shop buttons
+                renderShop();
+                
+            } catch (error) {
+                console.error("Error buying plant:", error);
+                showError("Gagal membeli tanaman");
+            }
+        }
+        
+        function openModal(modalId) {
+            if (modalId === 'tanamModal') {
+                renderTanamModal();
+            }
+            document.getElementById(modalId).style.display = 'flex';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        function renderTanamModal() {
+            const modalContent = document.getElementById("tanamModalContent");
+            
+            if (!userData || userData.inventory.length === 0) {
+                modalContent.innerHTML = `
+                    <p>Inventory kamu kosong!</p>
+                    <p>Beli tanaman dulu di toko.</p>
+                    <button class="btn btn-primary" onclick="closeModal('tanamModal')" style="margin-top: 15px;">
+                        OK
+                    </button>
+                `;
+                return;
+            }
+            
+            // Hitung jumlah per tanaman di inventory
+            const tanamanCount = {};
+            userData.inventory.forEach(nama => {
+                tanamanCount[nama] = (tanamanCount[nama] || 0) + 1;
+            });
+            
+            // Hitung slot kosong di kebun
+            const slotTerisi = userData.kebun ? userData.kebun.length : 0;
+            const slotKosong = userData.slotTerbuka - slotTerisi;
+            
+            if (slotKosong <= 0) {
+                modalContent.innerHTML = `
+                    <p>Kebun kamu penuh!</p>
+                    <p>Buka slot baru atau panen tanaman yang sudah matang.</p>
+                    <div class="kebun-actions" style="margin-top: 15px;">
+                        <button class="btn btn-primary" onclick="closeModal('tanamModal'); openModal('bukaSlotModal');">
+                            Buka Slot
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeModal('tanamModal')">
+                            Batal
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `<p>Pilih tanaman untuk ditanam (Slot kosong: ${slotKosong})</p>`;
+            
+            for (const [nama, jumlah] of Object.entries(tanamanCount)) {
+                const tanaman = tanamanList[nama];
+                if (tanaman) {
+                    html += `
+                        <div class="tanaman-item" style="margin-bottom: 10px;">
+                            <div class="tanaman-icon">${tanaman.icon}</div>
+                            <div class="tanaman-info">
+                                <h4>${nama} (${jumlah}x)</h4>
+                                <p>Waktu tumbuh: ${tanaman.waktuTumbuh} detik</p>
+                                <p>Hasil panen: $${tanaman.hargaJual}</p>
+                            </div>
+                            <button class="beli-btn" onclick="tanamTanaman('${nama}')">
+                                Tanam
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+            
+            modalContent.innerHTML = html;
+        }
+        
+        async function tanamTanaman(nama) {
+            try {
+                // Cari index tanaman di inventory
+                const plantIndex = userData.inventory.indexOf(nama);
+                if (plantIndex === -1) return;
+                
+                // Cari slot kosong
+                const slotTerisi = userData.kebun ? userData.kebun.map(s => s.slotKe) : [];
+                let slotKosong = null;
+                
+                for (let i = 1; i <= userData.slotTerbuka; i++) {
+                    if (!slotTerisi.includes(i)) {
+                        slotKosong = i;
+                        break;
+                    }
+                }
+                
+                if (!slotKosong) {
+                    showError("Tidak ada slot kosong!");
+                    return;
+                }
+                
+                // Buat data tanaman di kebun
+                const tanamanBaru = {
+                    slotKe: slotKosong,
+                    namaTanaman: nama,
+                    waktuTanam: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: "tumbuh"
+                };
+                
+                // Update database
+                const newInventory = [...userData.inventory];
+                newInventory.splice(plantIndex, 1);
+                
+                const newKebun = userData.kebun ? [...userData.kebun, tanamanBaru] : [tanamanBaru];
+                
+                await userDocRef.update({
+                    inventory: newInventory,
+                    kebun: newKebun
+                });
+                
+                showSuccess(`${nama} berhasil ditanam di slot ${slotKosong}!`);
+                closeModal('tanamModal');
+                
+            } catch (error) {
+                console.error("Error planting:", error);
+                showError("Gagal menanam tanaman");
+            }
+        }
+        
+        async function kelolaTanaman(slotKe) {
+            const tanaman = userData.kebun.find(s => s.slotKe === slotKe);
+            if (!tanaman) return;
+            
+            const tanamanData = tanamanList[tanaman.namaTanaman];
+            const sekarang = new Date().getTime();
+            const waktuTanam = tanaman.waktuTanam?.toDate().getTime() || sekarang;
+            const waktuMatang = waktuTanam + (tanamanData.waktuTumbuh * 1000);
+            const sudahMatang = sekarang >= waktuMatang;
+            
+            if (sudahMatang) {
+                // Panen tanaman
+                const konfirmasi = confirm(`Panen ${tanaman.namaTanaman} untuk $${tanamanData.hargaJual}?`);
+                if (konfirmasi) {
+                    await panenTanaman(slotKe);
+                }
+            } else {
+                const sisaWaktu = formatWaktu(waktuMatang - sekarang);
+                alert(`${tanaman.namaTanaman} masih tumbuh.\nSisa waktu: ${sisaWaktu}`);
+            }
+        }
+        
+        async function panenTanaman(slotKe) {
+            try {
+                const tanaman = userData.kebun.find(s => s.slotKe === slotKe);
+                if (!tanaman) return;
+                
+                const tanamanData = tanamanList[tanaman.namaTanaman];
+                const newUang = userData.uang + tanamanData.hargaJual;
+                const newKebun = userData.kebun.filter(s => s.slotKe !== slotKe);
+                
+                await userDocRef.update({
+                    uang: newUang,
+                    kebun: newKebun
+                });
+                
+                showSuccess(`Berhasil memanen ${tanaman.namaTanaman} (+$${tanamanData.hargaJual})`);
+                
+            } catch (error) {
+                console.error("Error harvesting:", error);
+                showError("Gagal memanen tanaman");
+            }
+        }
+        
+        async function panenSemua() {
+            try {
+                const sekarang = new Date().getTime();
+                let totalPanen = 0;
+                const tanamanMatang = [];
+                
+                // Cari tanaman yang sudah matang
+                for (const tanaman of userData.kebun) {
+                    const tanamanData = tanamanList[tanaman.namaTanaman];
+                    const waktuTanam = tanaman.waktuTanam?.toDate().getTime() || sekarang;
+                    const waktuMatang = waktuTanam + (tanamanData.waktuTumbuh * 1000);
+                    
+                    if (sekarang >= waktuMatang) {
+                        totalPanen += tanamanData.hargaJual;
+                        tanamanMatang.push(tanaman.slotKe);
+                    }
+                }
+                
+                if (tanamanMatang.length === 0) {
+                    showError("Belum ada tanaman yang siap panen!");
+                    return;
+                }
+                
+                const konfirmasi = confirm(`Panen ${tanamanMatang.length} tanaman untuk $${totalPanen}?`);
+                if (!konfirmasi) return;
+                
+                // Update database
+                const newUang = userData.uang + totalPanen;
+                const newKebun = userData.kebun.filter(t => !tanamanMatang.includes(t.slotKe));
+                
+                await userDocRef.update({
+                    uang: newUang,
+                    kebun: newKebun
+                });
+                
+                showSuccess(`Berhasil memanen ${tanamanMatang.length} tanaman (+$${totalPanen})`);
+                
+            } catch (error) {
+                console.error("Error harvesting all:", error);
+                showError("Gagal memanen tanaman");
+            }
+        }
+        
+        async function bukaSlot() {
+            if (!userData) return;
+            
+            const hargaSlot = 500;
+            
+            if (userData.uang < hargaSlot) {
+                showError("Uang tidak cukup! Butuh $500");
+                return;
+            }
+            
+            if (userData.slotTerbuka >= 25) {
+                showError("Sudah mencapai batas maksimal slot (25)");
+                return;
+            }
+            
+            try {
+                const newUang = userData.uang - hargaSlot;
+                const newSlotTerbuka = userData.slotTerbuka + 1;
+                
+                await userDocRef.update({
+                    uang: newUang,
+                    slotTerbuka: newSlotTerbuka
+                });
+                
+                showSuccess(`Berhasil membuka slot baru! (Total: ${newSlotTerbuka}/25)`);
+                closeModal('bukaSlotModal');
+                
+            } catch (error) {
+                console.error("Error opening slot:", error);
+                showError("Gagal membuka slot");
+            }
+        }
+        
+        async function redeemCode() {
+            const codeInput = document.getElementById("redeemCode");
+            const code = codeInput.value.trim().toUpperCase();
+            
+            if (!code) {
+                showError("Masukkan kode terlebih dahulu!");
+                return;
+            }
+            
+            // Cek kode valid
+            const hadiah = kodeHadiah[code];
+            if (!hadiah) {
+                showError("Kode tidak valid!");
+                return;
+            }
+            
+            // Cek apakah sudah pernah dipakai
+            if (userData.usedCodes && userData.usedCodes.includes(code)) {
+                showError("Kode sudah pernah digunakan!");
+                return;
+            }
+            
+            try {
+                const newUsedCodes = userData.usedCodes ? [...userData.usedCodes, code] : [code];
+                
+                let updateData = {
+                    usedCodes: newUsedCodes
+                };
+                
+                let pesan = "";
+                
+                // Berikan hadiah sesuai jenis
+                if (hadiah.type === "uang") {
+                    updateData.uang = userData.uang + hadiah.value;
+                    pesan = `Berhasil redeem kode! +$${hadiah.value}`;
+                } 
+                else if (hadiah.type === "slot") {
+                    updateData.slotTerbuka = Math.min(25, userData.slotTerbuka + hadiah.value);
+                    pesan = `Berhasil redeem kode! +${hadiah.value} slot kebun`;
+                }
+                else if (hadiah.type === "admin" && code === "adminfarel") {
+                    updateData.role = "admin";
+                    pesan = "Selamat! Kamu sekarang admin!";
+                }
+                
+                await userDocRef.update(updateData);
+                
+                // Reset input
+                codeInput.value = "";
+                showSuccess(pesan, "redeemMessage");
+                
+                // Jika menjadi admin, refresh untuk tampilkan panel admin
+                if (hadiah.type === "admin") {
+                    setTimeout(() => location.reload(), 1500);
+                }
+                
+            } catch (error) {
+                console.error("Error redeeming code:", error);
+                showError("Gagal redeem kode", "redeemMessage");
+            }
+        }
+        
+        // ===== FUNGSI BANTUAN =====
+        function formatWaktu(ms) {
+            const detik = Math.floor(ms / 1000);
+            const menit = Math.floor(detik / 60);
+            const sisaDetik = detik % 60;
+            
+            if (menit > 0) {
+                return `${menit}m ${sisaDetik}s`;
+            }
+            return `${sisaDetik}s`;
+        }
+        
+        function showError(message, elementId = "errorMessage") {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.display = "block";
+            
+            // Auto hide setelah 5 detik
+            setTimeout(() => {
+                element.style.display = "none";
+            }, 5000);
+        }
+        
+        function showSuccess(message, elementId = "successMessage") {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.display = "block";
+            
+            // Auto hide setelah 3 detik
+            setTimeout(() => {
+                element.style.display = "none";
+            }, 3000);
+        }
+        
+        async function logout() {
+            try {
+                if (unsubscribeUser) unsubscribeUser();
+                await auth.signOut();
+                window.location.href = "login.html";
+            } catch (error) {
+                console.error("Error logging out:", error);
+            }
+        }
+        
+        // ===== INISIALISASI =====
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
