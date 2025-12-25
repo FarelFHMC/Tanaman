@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Game Tanaman</title>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+    
+    <style>
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0D47A1, #1565C0);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #0D47A1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .user-badge {
+            background: #E3F2FD;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: #0D47A1;
+            font-weight: 500;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1976D2;
+        }
+
+        .btn-secondary {
+            background: #757575;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #616161;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #388E3C;
+        }
+
+        .btn-danger {
+            background: #F44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #D32F2F;
+        }
+
+        .btn-warning {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #F57C00;
+        }
+
+        /* ===== STATS CARDS ===== */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #0D47A1;
+        }
+
+        .stat-card .value.positive {
+            color: #4CAF50;
+        }
+
+        .stat-card .value.negative {
+            color: #F44336;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            color: #0D47A1;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #E3F2FD;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ===== TABLE STYLES ===== */
+        .dataTables_wrapper {
+            margin-top: 20px;
+        }
+
+        .dataTables_filter input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            margin-left: 10px;
+        }
+
+        .dataTables_length select {
+            padding: 6px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+        }
+
+        table.dataTable {
+            border-collapse: collapse !important;
+            width: 100% !important;
+        }
+
+        table.dataTable thead th {
+            background: #0D47A1;
+            color: white;
+            font-weight: 600;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        table.dataTable tbody td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        table.dataTable tbody tr:hover {
+            background: #F5F5F5;
+        }
+
+        /* ===== BADGES ===== */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-admin {
+            background: #FFE082;
+            color: #FF8F00;
+        }
+
+        .badge-user {
+            background: #C8E6C9;
+            color: #2E7D32;
+        }
+
+        .badge-banned {
+            background: #FFCDD2;
+            color: #C62828;
+        }
+
+        .badge-active {
+            background: #BBDEFB;
+            color: #1565C0;
+        }
+
+        /* ===== ACTION BUTTONS ===== */
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-btn.edit {
+            background: #2196F3;
+            color: white;
+        }
+
+        .action-btn.ban {
+            background: #F44336;
+            color: white;
+        }
+
+        .action-btn.unban {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .action-btn.view {
+            background: #FF9800;
+            color: white;
+        }
+
+        /* ===== MODAL ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #E3F2FD;
+        }
+
+        .modal-header h3 {
+            color: #0D47A1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        /* ===== USER DETAILS ===== */
+        .user-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .detail-card {
+            background: #F5F5F5;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .detail-card h4 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .detail-card p {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* ===== LOADING ===== */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0D47A1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ===== MESSAGES ===== */
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .error {
+            background: #FFEBEE;
+            color: #D32F2F;
+            border-left: 4px solid #F44336;
+        }
+
+        .success {
+            background: #E8F5E9;
+            color: #2E7D32;
+            border-left: 4px solid #4CAF50;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .header-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-crown"></i>
+                Admin Panel - Game Tanaman
+            </h1>
+            
+            <div class="header-actions">
+                <div class="user-badge" id="adminEmail">
+                    <i class="fas fa-user-shield"></i>
+                    <span id="currentAdmin">Loading...</span>
+                </div>
+                <button class="btn btn-secondary" onclick="goToDashboard()">
+                    <i class="fas fa-gamepad"></i> Ke Dashboard
+                </button>
+                <button class="btn btn-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- STATS CARDS -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="label">Total User</div>
+                <div class="value" id="totalUsers">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Total Admin</div>
+                <div class="value positive" id="totalAdmins">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">User Aktif</div>
+                <div class="value positive" id="activeUsers">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">User Banned</div>
+                <div class="value negative" id="bannedUsers">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Total Uang</div>
+                <div class="value" id="totalMoney">$0</div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <div class="section-title">
+                <h2><i class="fas fa-users"></i> Daftar Semua User</h2>
+                <div>
+                    <button class="btn btn-primary" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Refresh Data
+                    </button>
+                    <button class="btn btn-success" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- TABLE -->
+            <table id="usersTable" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Uang</th>
+                        <th>Slot</th>
+                        <th>Inventory</th>
+                        <th>Kebun</th>
+                        <th>Bergabung</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <!-- Data akan diisi oleh JavaScript -->
+                </tbody>
+            </table>
+
+            <!-- MESSAGES -->
+            <div id="errorMessage" class="message error"></div>
+            <div id="successMessage" class="message success"></div>
+        </div>
+
+        <!-- FOOTER -->
+        <div style="text-align: center; color: white; padding: 20px; font-size: 14px;">
+            <p>© 2024 Game Tanaman - Admin Panel | Hanya untuk admin yang berwenang</p>
+        </div>
+    </div>
+
+    <!-- MODAL DETAIL USER -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-circle"></i> Detail User</h3>
+                <button class="close-modal" onclick="closeModal('detailModal')">&times;</button>
+            </div>
+            <div id="detailModalContent">
+                <!-- Konten akan diisi oleh JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT USER -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Edit User</h3>
+                <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
+            </div>
+            <div id="editModalContent">
+                <!-- Konten akan diisi oleh JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JQuery (untuk DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <!-- DataTables Buttons -->
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+
+    <script>
+        // ===== KONFIGURASI FIREBASE =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyDKP_MntjNaWYDQfbwOCqQoK1Vyvf6JhMM",
+            authDomain: "contoh-c7b96.firebaseapp.com",
+            projectId: "contoh-c7b96",
+            storageBucket: "contoh-c7b96.firebasestorage.app",
+            messagingSenderId: "606885088808",
+            appId: "1:606885088808:web:35b4dac1fcf13810576f1d",
+            measurementId: "G-T05S4XV2ZK"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        // ===== VARIABEL GLOBAL =====
+        let currentUser = null;
+        let usersData = [];
+        let usersTable = null;
+        
+        // ===== INISIALISASI =====
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Cek apakah user sudah login
+            auth.onAuthStateChanged(async (user) => {
+                if (!user) {
+                    window.location.href = "login.html";
+                    return;
+                }
+                
+                // Cek apakah user adalah admin
+                const userDoc = await db.collection("users").doc(user.uid).get();
+                if (!userDoc.exists || userDoc.data().role !== "admin") {
+                    showError("Akses ditolak! Hanya admin yang bisa mengakses halaman ini.");
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 3000);
+                    return;
+                }
+                
+                // User adalah admin
+                currentUser = user;
+                document.getElementById("currentAdmin").textContent = user.email;
+                document.getElementById("adminEmail").innerHTML = `<i class="fas fa-user-shield"></i> ${user.email}`;
+                
+                // Load data user
+                await loadAllUsers();
+                initializeDataTable();
+            });
+        });
+        
+        // ===== FUNGSI LOAD DATA =====
+        async function loadAllUsers() {
+            try {
+                const querySnapshot = await db.collection("users").get();
+                usersData = [];
+                let stats = {
+                    total: 0,
+                    admins: 0,
+                    active: 0,
+                    banned: 0,
+                    totalMoney: 0
+                };
+                
+                querySnapshot.forEach((doc) => {
+                    const user = {
+                        id: doc.id,
+                        ...doc.data(),
+                        createdAt: doc.data().createdAt?.toDate() || new Date()
+                    };
+                    usersData.push(user);
+                    
+                    // Update stats
+                    stats.total++;
+                    if (user.role === "admin") stats.admins++;
+                    if (!user.banned) stats.active++;
+                    if (user.banned) stats.banned++;
+                    stats.totalMoney += user.uang || 0;
+                });
+                
+                // Update stats cards
+                document.getElementById("totalUsers").textContent = stats.total;
+                document.getElementById("totalAdmins").textContent = stats.admins;
+                document.getElementById("activeUsers").textContent = stats.active;
+                document.getElementById("bannedUsers").textContent = stats.banned;
+                document.getElementById("totalMoney").textContent = `$${stats.totalMoney}`;
+                
+                // Update table
+                updateUsersTable();
+                
+            } catch (error) {
+                console.error("Error loading users:", error);
+                showError("Gagal memuat data user");
+            }
+        }
+        
+        function updateUsersTable() {
+            const tbody = document.getElementById("usersTableBody");
+            if (!tbody) return;
+            
+            let html = "";
+            
+            usersData.forEach((user, index) => {
+                const joinDate = user.createdAt.toLocaleDateString("id-ID");
+                const inventoryCount = user.inventory ? user.inventory.length : 0;
+                const kebunCount = user.kebun ? user.kebun.length : 0;
+                
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><strong>${user.email || "-"}</strong></td>
+                        <td>${getRoleBadge(user.role)}</td>
+                        <td>${getStatusBadge(user.banned)}</td>
+                        <td><span style="color: #4CAF50; font-weight: bold;">$${user.uang || 0}</span></td>
+                        <td>${user.kebun ? user.kebun.length : 0}/${user.slotTerbuka || 5}</td>
+                        <td>${inventoryCount} tanaman</td>
+                        <td>${kebunCount} tanaman</td>
+                        <td>${joinDate}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn view" onclick="viewUserDetail('${user.id}')" title="Lihat Detail">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn edit" onclick="editUser('${user.id}')" title="Edit User">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                ${user.id !== currentUser.uid ? 
+                                    (user.banned ? 
+                                        `<button class="action-btn unban" onclick="toggleBanUser('${user.id}', false)" title="Unban User">
+                                            <i class="fas fa-user-check"></i>
+                                        </button>` :
+                                        `<button class="action-btn ban" onclick="toggleBanUser('${user.id}', true)" title="Ban User">
+                                            <i class="fas fa-user-slash"></i>
+                                        </button>`
+                                    ) : '<span style="color: #999; font-size: 12px;">Current</span>'
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+            
+            // Refresh DataTables jika sudah diinisialisasi
+            if (usersTable) {
+                usersTable.destroy();
+                initializeDataTable();
+            }
+        }
+        
+        function initializeDataTable() {
+            usersTable = $('#usersTable').DataTable({
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                order: [[1, 'asc']],
+                language: {
+                    search: "Cari:",
+                    lengthMenu: "Tampilkan _MENU_ user per halaman",
+                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ user",
+                    paginate: {
+                        first: "Pertama",
+                        last: "Terakhir",
+                        next: "Berikutnya",
+                        previous: "Sebelumnya"
+                    }
+                },
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="fas fa-file-excel"></i> Excel',
+                        title: 'Data User Game Tanaman'
+                    }
+                ]
+            });
+        }
+        
+        // ===== FUNGSI BANTUAN =====
+        function getRoleBadge(role) {
+            return role === "admin" 
+                ? '<span class="badge badge-admin"><i class="fas fa-crown"></i> Admin</span>'
+                : '<span class="badge badge-user"><i class="fas fa-user"></i> User</span>';
+        }
+        
+        function getStatusBadge(banned) {
+            return banned 
+                ? '<span class="badge badge-banned"><i class="fas fa-ban"></i> Banned</span>'
+                : '<span class="badge badge-active"><i class="fas fa-check-circle"></i> Aktif</span>';
+        }
+        
+        function formatDate(date) {
+            if (!date) return "-";
+            return date.toLocaleDateString("id-ID", {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function showError(message) {
+            const element = document.getElementById("errorMessage");
+            element.textContent = message;
+            element.style.display = "block";
+            
+            setTimeout(() => {
+                element.style.display = "none";
+            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            const element = document.getElementById("successMessage");
+            element.textContent = message;
+            element.style.display = "block";
+            
+            setTimeout(() => {
+                element.style.display = "none";
+            }, 3000);
+        }
+        
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // ===== FUNGSI ADMIN =====
+        async function viewUserDetail(userId) {
+            const user = usersData.find(u => u.id === userId);
+            if (!user) return;
+            
+            const modalContent = document.getElementById("detailModalContent");
+            
+            // Data tanaman yang sedang tumbuh
+            let tanamanDiKebun = "";
+            if (user.kebun && user.kebun.length > 0) {
+                user.kebun.forEach(tanaman => {
+                    const waktuTanam = tanaman.waktuTanam?.toDate();
+                    const waktuFormat = waktuTanam ? formatDate(waktuTanam) : "-";
+                    tanamanDiKebun += `
+                        <div style="background: #F5F5F5; padding: 10px; border-radius: 5px; margin-bottom: 5px;">
+                            <strong>${tanaman.namaTanaman}</strong> - Slot ${tanaman.slotKe}<br>
+                            <small>Ditanam: ${waktuFormat}</small>
+                        </div>
+                    `;
+                });
+            } else {
+                tanamanDiKebun = "<p>Tidak ada tanaman di kebun</p>";
+            }
+            
+            // Data inventory
+            let inventoryList = "";
+            if (user.inventory && user.inventory.length > 0) {
+                const tanamanCount = {};
+                user.inventory.forEach(nama => {
+                    tanamanCount[nama] = (tanamanCount[nama] || 0) + 1;
+                });
+                
+                for (const [nama, jumlah] of Object.entries(tanamanCount)) {
+                    inventoryList += `
+                        <span style="display: inline-block; background: #E8F5E9; padding: 5px 10px; 
+                               border-radius: 15px; margin: 3px; font-size: 12px;">
+                            ${nama} (${jumlah}x)
+                        </span>
+                    `;
+                }
+            } else {
+                inventoryList = "<p>Inventory kosong</p>";
+            }
+            
+            // Kode yang sudah dipakai
+            let usedCodesList = "";
+            if (user.usedCodes && user.usedCodes.length > 0) {
+                user.usedCodes.forEach(code => {
+                    usedCodesList += `
+                        <span style="display: inline-block; background: #FFF3E0; padding: 3px 8px; 
+                               border-radius: 10px; margin: 2px; font-size: 11px;">
+                            ${code}
+                        </span>
+                    `;
+                });
+            } else {
+                usedCodesList = "<p>Belum menggunakan kode</p>";
+            }
+            
+            modalContent.innerHTML = `
+                <div class="user-details-grid">
+                    <div class="detail-card">
+                        <h4><i class="fas fa-envelope"></i> Email</h4>
+                        <p>${user.email}</p>
+                    </div>
+                    <div class="detail-card">
+                        <h4><i class="fas fa-id-card"></i> User ID</h4>
+                        <p style="font-size: 12px; word-break: break-all;">${user.id}</p>
+                    </div>
+                    <div class="detail-card">
+                        <h4><i class="fas fa-user-tag"></i> Role</h4>
+                        <p>${user.role}</p>
+                    </div>
+                    <div class="detail-card">
+                        <h4><i class="fas fa-ban"></i> Status</h4>
+                        <p>${user.banned ? "Banned" : "Aktif"}</p>
+                    </div>
+                    <div class="detail-card">
+                        <h4><i class="fas fa-money-bill-wave"></i> Uang</h4>
+                        <p style="color: #4CAF50;">$${user.uang || 0}</p>
+                    </div>
+                    <div class="detail-card">
+                        <h4><i class="fas fa-seedling"></i> Slot Kebun</h4>
+                        <p>${user.kebun ? user.kebun.length : 0}/${user.slotTerbuka || 5}</p>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4><i class="fas fa-shopping-bag"></i> Inventory (${user.inventory ? user.inventory.length : 0} tanaman)</h4>
+                    <div style="margin-top: 10px;">
+                        ${inventoryList}
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4><i class="fas fa-tractor"></i> Tanaman di Kebun (${user.kebun ? user.kebun.length : 0})</h4>
+                    <div style="margin-top: 10px; max-height: 200px; overflow-y: auto;">
+                        ${tanamanDiKebun}
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4><i class="fas fa-gift"></i> Kode yang Sudah Dipakai (${user.usedCodes ? user.usedCodes.length : 0})</h4>
+                    <div style="margin-top: 10px;">
+                        ${usedCodesList}
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4><i class="fas fa-calendar-alt"></i> Bergabung</h4>
+                    <p>${formatDate(user.createdAt)}</p>
+                </div>
+                
+                <div style="margin-top: 30px; text-align: center;">
+                    <button class="btn btn-primary" onclick="editUser('${user.id}'); closeModal('detailModal')">
+                        <i class="fas fa-edit"></i> Edit User Ini
+                    </button>
+                </div>
+            `;
+            
+            openModal("detailModal");
+        }
+        
+        async function editUser(userId) {
+            const user = usersData.find(u => u.id === userId);
+            if (!user) return;
+            
+            const modalContent = document.getElementById("editModalContent");
+            
+            modalContent.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <h4>Edit User: ${user.email}</h4>
+                    <p>ID: <code>${user.id}</code></p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Role</label>
+                        <select id="editRole" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px;">
+                            <option value="user" ${user.role === "user" ? "selected" : ""}>User</option>
+                            <option value="admin" ${user.role === "admin" ? "selected" : ""}>Admin</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Uang</label>
+                        <input type="number" id="editUang" value="${user.uang || 0}" 
+                               style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px;">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Slot Terbuka</label>
+                    <input type="number" id="editSlot" value="${user.slotTerbuka || 5}" min="5" max="25"
+                           style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Status</label>
+                    <div style="display: flex; gap: 20px;">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="radio" name="editStatus" value="active" ${!user.banned ? "checked" : ""}>
+                            <span>Aktif</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="radio" name="editStatus" value="banned" ${user.banned ? "checked" : ""}>
+                            <span>Banned</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Reset Data</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-warning" onclick="resetUserInventory('${user.id}')">
+                            <i class="fas fa-trash"></i> Reset Inventory
+                        </button>
+                        <button class="btn btn-warning" onclick="resetUserKebun('${user.id}')">
+                            <i class="fas fa-trash"></i> Reset Kebun
+                        </button>
+                        <button class="btn btn-danger" onclick="resetUserAll('${user.id}')">
+                            <i class="fas fa-bomb"></i> Reset Semua
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="closeModal('editModal')">
+                        <i class="fas fa-times"></i> Batal
+                    </button>
+                    <button class="btn btn-primary" onclick="saveUserChanges('${user.id}')">
+                        <i class="fas fa-save"></i> Simpan Perubahan
+                    </button>
+                </div>
+            `;
+            
+            openModal("editModal");
+        }
+        
+        async function saveUserChanges(userId) {
+            try {
+                const newRole = document.getElementById("editRole").value;
+                const newUang = parseInt(document.getElementById("editUang").value) || 0;
+                const newSlot = parseInt(document.getElementById("editSlot").value) || 5;
+                const isBanned = document.querySelector('input[name="editStatus"]:checked').value === "banned";
+                
+                // Validasi
+                if (newUang < 0) {
+                    showError("Uang tidak boleh negatif");
+                    return;
+                }
+                
+                if (newSlot < 5 || newSlot > 25) {
+                    showError("Slot harus antara 5-25");
+                    return;
+                }
+                
+                // Update data di Firestore
+                await db.collection("users").doc(userId).update({
+                    role: newRole,
+                    uang: newUang,
+                    slotTerbuka: newSlot,
+                    banned: isBanned
+                });
+                
+                showSuccess("Perubahan berhasil disimpan!");
+                closeModal("editModal");
+                
+                // Refresh data
+                await loadAllUsers();
+                
+            } catch (error) {
+                console.error("Error saving changes:", error);
+                showError("Gagal menyimpan perubahan");
+            }
+        }
+        
+        async function toggleBanUser(userId, ban) {
+            if (userId === currentUser.uid) {
+                showError("Tidak bisa melakukan aksi pada akun sendiri");
+                return;
+            }
+            
+            const user = usersData.find(u => u.id === userId);
+            if (!user) return;
+            
+            const action = ban ? "membanned" : "mengunban";
+            const confirmMsg = ban 
+                ? `Yakin ingin banned user ${user.email}? User tidak bisa login.`
+                : `Yakin ingin unban user ${user.email}? User bisa login kembali.`;
+            
+            if (!confirm(confirmMsg)) return;
+            
+            try {
+                await db.collection("users").doc(userId).update({
+                    banned: ban
+                });
+                
+                showSuccess(`Berhasil ${action} user ${user.email}`);
+                
+                // Refresh data
+                await loadAllUsers();
+                
+            } catch (error) {
+                console.error(`Error ${action} user:`, error);
+                showError(`Gagal ${action} user`);
+            }
+        }
+        
+        async function resetUserInventory(userId) {
+            if (!confirm("Reset inventory user? Semua tanaman di inventory akan dihapus.")) return;
+            
+            try {
+                await db.collection("users").doc(userId).update({
+                    inventory: []
+                });
+                
+                showSuccess("Inventory user berhasil direset!");
+                closeModal("editModal");
+                await loadAllUsers();
+                
+            } catch (error) {
+                console.error("Error resetting inventory:", error);
+                showError("Gagal reset inventory");
+            }
+        }
+        
+        async function resetUserKebun(userId) {
+            if (!confirm("Reset kebun user? Semua tanaman di kebun akan dihapus.")) return;
+            
+            try {
+                await db.collection("users").doc(userId).update({
+                    kebun: []
+                });
+                
+                showSuccess("Kebun user berhasil direset!");
+                closeModal("editModal");
+                await loadAllUsers();
+                
+            } catch (error) {
+                console.error("Error resetting kebun:", error);
+                showError("Gagal reset kebun");
+            }
+        }
+        
+        async function resetUserAll(userId) {
+            if (userId === currentUser.uid) {
+                showError("Tidak bisa reset akun sendiri!");
+                return;
+            }
+            
+            if (!confirm("RESET SEMUA DATA USER?\n\nIni akan menghapus:\n- Semua tanaman di inventory\n- Semua tanaman di kebun\n- Reset uang ke $1000\n\nUser akan kembali seperti baru daftar (kecuali role dan email).")) return;
+            
+            try {
+                await db.collection("users").doc(userId).update({
+                    inventory: [],
+                    kebun: [],
+                    uang: 1000,
+                    slotTerbuka: 5,
+                    usedCodes: []
+                });
+                
+                showSuccess("Semua data user berhasil direset!");
+                closeModal("editModal");
+                await loadAllUsers();
+                
+            } catch (error) {
+                console.error("Error resetting user:", error);
+                showError("Gagal reset data user");
+            }
+        }
+        
+        // ===== FUNGSI UTAMA =====
+        function refreshData() {
+            showSuccess("Memuat ulang data...");
+            loadAllUsers();
+        }
+        
+        function exportToExcel() {
+            // DataTables sudah punya built-in export
+            $('.buttons-excel').click();
+        }
+        
+        function goToDashboard() {
+            window.location.href = "dashboard.html";
+        }
+        
+        async function logout() {
+            try {
+                await auth.signOut();
+                window.location.href = "login.html";
+            } catch (error) {
+                console.error("Error logging out:", error);
+            }
+        }
+    </script>
+</body>
+</html>
