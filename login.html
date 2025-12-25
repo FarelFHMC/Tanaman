@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Game Tanaman</title>
+    
+    <!-- Import Firebase SDKs dari CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #2E7D32, #388E3C);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #4CAF50;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #E8F5E9;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            background: white;
+            border-bottom: 3px solid #4CAF50;
+            color: #2E7D32;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .form {
+            display: none;
+        }
+
+        .form.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: #45a049;
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+        }
+
+        .btn-secondary {
+            background: #757575;
+        }
+
+        .btn-secondary:hover {
+            background: #616161;
+        }
+
+        .error-message {
+            background: #FFEBEE;
+            color: #D32F2F;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 14px;
+            border-left: 4px solid #F44336;
+        }
+
+        .success-message {
+            background: #E8F5E9;
+            color: #2E7D32;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 14px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-text {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌱 Game Tanaman</h1>
+            <p>Berkebun virtual yang menyenangkan</p>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showForm('login')">Login</div>
+            <div class="tab" onclick="showForm('register')">Daftar</div>
+        </div>
+        
+        <div class="form-container">
+            <!-- Pesan Error -->
+            <div id="errorMessage" class="error-message"></div>
+            
+            <!-- Pesan Sukses -->
+            <div id="successMessage" class="success-message"></div>
+            
+            <!-- Form Login -->
+            <form id="loginForm" class="form active" onsubmit="loginUser(event)">
+                <div class="input-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="contoh@gmail.com" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Minimal 6 karakter" required>
+                </div>
+                
+                <button type="submit" class="btn" id="loginBtn">
+                    <span id="loginBtnText">Masuk ke Game</span>
+                </button>
+            </form>
+            
+            <!-- Form Register -->
+            <form id="registerForm" class="form" onsubmit="registerUser(event)">
+                <div class="input-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" placeholder="contoh@gmail.com" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" placeholder="Minimal 6 karakter" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="confirmPassword">Konfirmasi Password</label>
+                    <input type="password" id="confirmPassword" placeholder="Ketik ulang password" required>
+                </div>
+                
+                <button type="submit" class="btn" id="registerBtn">
+                    <span id="registerBtnText">Buat Akun Baru</span>
+                </button>
+            </form>
+            
+            <div class="info-text">
+                Setelah login, Anda akan masuk ke dashboard game
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Konfigurasi Firebase (GANTI DENGAN MILIK ANDA jika perlu)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDKP_MntjNaWYDQfbwOCqQoK1Vyvf6JhMM",
+            authDomain: "contoh-c7b96.firebaseapp.com",
+            projectId: "contoh-c7b96",
+            storageBucket: "contoh-c7b96.firebasestorage.app",
+            messagingSenderId: "606885088808",
+            appId: "1:606885088808:web:35b4dac1fcf13810576f1d",
+            measurementId: "G-T05S4XV2ZK"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Toggle antara form login dan register
+        function showForm(formType) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            if (formType === 'login') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+            }
+            
+            // Update forms
+            document.querySelectorAll('.form').forEach(form => {
+                form.classList.remove('active');
+            });
+            document.getElementById(formType + 'Form').classList.add('active');
+            
+            // Clear messages
+            hideMessages();
+        }
+
+        // Fungsi untuk menampilkan pesan error
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Sembunyikan setelah 5 detik
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Fungsi untuk menampilkan pesan sukses
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            
+            // Sembunyikan setelah 3 detik
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Fungsi untuk menyembunyikan semua pesan
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // Fungsi untuk menampilkan loading
+        function showLoading(buttonId, buttonTextId, text) {
+            const button = document.getElementById(buttonId);
+            const buttonText = document.getElementById(buttonTextId);
+            
+            button.disabled = true;
+            buttonText.innerHTML = '<div class="loading"></div>' + text;
+        }
+
+        // Fungsi untuk menyembunyikan loading
+        function hideLoading(buttonId, buttonTextId, text) {
+            const button = document.getElementById(buttonId);
+            const buttonText = document.getElementById(buttonTextId);
+            
+            button.disabled = false;
+            buttonText.textContent = text;
+        }
+
+        // Fungsi login user
+        async function loginUser(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            // Validasi input
+            if (!email || !password) {
+                showError('Harap isi semua kolom');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError('Password minimal 6 karakter');
+                return;
+            }
+            
+            // Tampilkan loading
+            showLoading('loginBtn', 'loginBtnText', 'Sedang masuk...');
+            
+            try {
+                // Login dengan Firebase Auth
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Cek apakah user dibanned
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    
+                    if (userData.banned === true) {
+                        // Logout user jika dibanned
+                        await auth.signOut();
+                        showError('Akun Anda dibanned. Hubungi admin.');
+                        hideLoading('loginBtn', 'loginBtnText', 'Masuk ke Game');
+                        return;
+                    }
+                }
+                
+                // Login berhasil, redirect ke dashboard
+                showSuccess('Login berhasil! Mengalihkan...');
+                
+                // Simpan data user di localStorage
+                localStorage.setItem('userEmail', user.email);
+                localStorage.setItem('userId', user.uid);
+                
+                // Redirect ke dashboard setelah 1.5 detik
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+                
+            } catch (error) {
+                // Tangani error
+                let errorMessage = 'Terjadi kesalahan';
+                
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage = 'Email tidak terdaftar';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage = 'Password salah';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'Format email tidak valid';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage = 'Akun dinonaktifkan';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage = 'Terlalu banyak percobaan. Coba lagi nanti';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showError(errorMessage);
+                hideLoading('loginBtn', 'loginBtnText', 'Masuk ke Game');
+            }
+        }
+
+        // Fungsi register user
+        async function registerUser(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validasi input
+            if (!email || !password || !confirmPassword) {
+                showError('Harap isi semua kolom');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError('Password minimal 6 karakter');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showError('Password tidak cocok');
+                return;
+            }
+            
+            // Tampilkan loading
+            showLoading('registerBtn', 'registerBtnText', 'Membuat akun...');
+            
+            try {
+                // Buat user baru dengan Firebase Auth
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Buat data user di Firestore
+                await db.collection('users').doc(user.uid).set({
+                    email: email,
+                    uid: user.uid,
+                    uang: 1000,  // Modal awal
+                    role: 'user',
+                    banned: false,
+                    slotTerbuka: 5,  // Slot kebun awal
+                    inventory: [],   // Inventory kosong
+                    kebun: [],       // Kebun kosong
+                    usedCodes: [],   // Kode yang sudah dipakai
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Registrasi berhasil
+                showSuccess('Akun berhasil dibuat! Mengalihkan...');
+                
+                // Simpan data user di localStorage
+                localStorage.setItem('userEmail', user.email);
+                localStorage.setItem('userId', user.uid);
+                
+                // Redirect ke dashboard setelah 1.5 detik
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+                
+            } catch (error) {
+                // Tangani error
+                let errorMessage = 'Terjadi kesalahan';
+                
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage = 'Email sudah terdaftar';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'Format email tidak valid';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'Password terlalu lemah';
+                        break;
+                    case 'auth/operation-not-allowed':
+                        errorMessage = 'Registrasi dinonaktifkan';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showError(errorMessage);
+                hideLoading('registerBtn', 'registerBtnText', 'Buat Akun Baru');
+            }
+        }
+
+        // Cek apakah user sudah login
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Jika user sudah login, redirect ke dashboard
+                window.location.href = 'dashboard.html';
+            }
+        });
+
+        // Enter key untuk submit form
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                const activeForm = document.querySelector('.form.active');
+                if (activeForm.id === 'loginForm') {
+                    loginUser(new Event('submit'));
+                } else if (activeForm.id === 'registerForm') {
+                    registerUser(new Event('submit'));
+                }
+            }
+        });
+    </script>
+</body>
+</html>
